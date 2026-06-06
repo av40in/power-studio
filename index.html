@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#5C666B;--surface:#4a5459;--surface2:#3f484d;--surface3:#363f44;
+  --border:#6e7a80;--border2:#8a9499;
+  --text:#F0F4F5;--text2:#C8D0D4;--text3:#9AAAB0;
+  --accent:#52D9C0;--accentL:rgba(82,217,192,0.15);--accentD:#2eb89e;
+  --red:#F4745B;--amber:#F5A623;--yellow:#F5C842;--blue:#64C8E8;
+  --r:6px;--r2:10px;
+  font-family:'Segoe UI',system-ui,sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh;
+  display:flex;flex-direction:column}
+
+/* Topbar */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:14px;height:52px;flex-shrink:0}
+.topbar h1{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill{background:var(--accentL);color:var(--accent);font-size:10px;font-weight:600;
+  padding:2px 8px;border-radius:20px;border:1px solid var(--accent)}
+
+/* Main layout */
+.body{display:grid;grid-template-columns:300px 1fr;flex:1;overflow:hidden}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column}
+.main{overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+
+/* Sidebar */
+.sb-section{padding:14px;border-bottom:1px solid var(--border)}
+.sb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--text3);margin-bottom:10px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);
+  font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);
+  background:var(--surface);color:var(--text);transition:all .12s;white-space:nowrap;font-family:inherit}
+.btn:hover{background:var(--surface2)}
+.btn-primary{background:var(--accent);color:#1a1a1a;border-color:var(--accentD)}
+.btn-primary:hover{background:var(--accentD)}
+.btn-sm{padding:3px 9px;font-size:11px}
+.btn-full{width:100%;justify-content:center;padding:8px}
+
+/* Forms */
+.form-group{margin-bottom:10px}
+.form-label{font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px}
+.form-hint{font-size:10px;color:var(--text3);margin-top:2px}
+.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r);padding:6px 10px;font-size:13px;color:var(--text);
+  font-family:inherit;outline:none}
+.form-input:focus,.form-select:focus{border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(82,217,192,0.18)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2)}
+.card-hdr{padding:12px 16px 10px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border)}
+.card-hdr h2{font-size:14px;font-weight:600}
+.card-body{padding:16px}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.stat{background:var(--surface2);border-radius:var(--r);padding:12px 14px;border:1px solid var(--border)}
+.stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px}
+.stat-val{font-size:28px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.stat-sub{font-size:10px;color:var(--text2);margin-top:4px}
+.stat.highlight{border-color:var(--accent);background:rgba(82,217,192,0.08)}
+.stat.highlight .stat-val{color:var(--accent)}
+.stat.warn{border-color:var(--amber);background:rgba(245,168,35,0.08)}
+.stat.warn .stat-val{color:var(--amber)}
+
+/* Result table */
+table.result-tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.result-tbl th{background:var(--surface2);color:var(--text2);font-size:10px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 12px;
+  text-align:center;border:1px solid var(--border)}
+table.result-tbl td{padding:8px 12px;border:1px solid var(--border);text-align:center;
+  font-variant-numeric:tabular-nums}
+table.result-tbl tr:hover td{background:rgba(82,217,192,0.06)}
+table.result-tbl td.alpha-col{font-weight:600;color:var(--text2);text-align:left}
+table.result-tbl td.min-n{color:var(--text3)}
+table.result-tbl td.opt-n{color:var(--accent);font-weight:600;font-size:13px}
+table.result-tbl td.max-n{color:var(--amber)}
+table.result-tbl td.highlighted{background:rgba(82,217,192,0.14)!important;
+  border-color:var(--accent);color:var(--accent);font-weight:700;font-size:15px}
+
+/* Power curve chart */
+.chart-wrap{position:relative}
+
+/* Interpretation */
+.interp{background:var(--surface2);border-radius:var(--r);padding:12px 14px;
+  border-left:3px solid var(--accent);font-size:12px;color:var(--text2);line-height:1.6}
+.interp strong{color:var(--text)}
+
+/* Toggle group */
+.toggle-group{display:flex;gap:2px;background:var(--surface2);padding:3px;border-radius:var(--r)}
+.toggle-btn{padding:4px 10px;border-radius:calc(var(--r) - 2px);border:none;
+  background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:inherit;
+  transition:all .1s}
+.toggle-btn.active{background:var(--accent);color:#1a1a1a;font-weight:600}
+
+/* Slider */
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:2px;
+  background:var(--surface3);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;
+  border-radius:50%;background:var(--accent);cursor:pointer}
+
+/* Divider */
+.divider{height:1px;background:var(--border);margin:8px 0}
+
+/* Notice */
+.notice{background:rgba(82,217,192,0.1);border:1px solid var(--accent);border-radius:var(--r);
+  padding:10px 14px;font-size:11px;color:var(--text2)}
+.notice-warn{background:rgba(245,168,35,0.1);border-color:var(--amber)}
+
+/* Footer */
+footer{text-align:center;padding:8px;font-size:10px;color:var(--text3);
+  border-top:1px solid var(--border);background:var(--surface2)}
+
+/* Sensitivity heat */
+.heat-grid{display:grid;gap:3px}
+.heat-row{display:flex;gap:3px;align-items:center}
+.heat-cell{flex:1;padding:6px 4px;border-radius:4px;text-align:center;
+  font-size:11px;font-weight:600;cursor:default}
+.heat-label{font-size:10px;color:var(--text3);width:44px;flex-shrink:0;text-align:right;padding-right:6px}
+.heat-col-label{flex:1;text-align:center;font-size:10px;color:var(--text3)}
+
+/* Pilot data import */
+.pilot-area{width:100%;min-height:70px;background:var(--surface2);border:1px dashed var(--border2);
+  border-radius:var(--r);padding:8px;font-size:11px;color:var(--text2);font-family:inherit;resize:vertical}
+.pilot-area:focus{outline:none;border-color:var(--accent)}
+.pilot-tag{display:inline-flex;align-items:center;gap:4px;background:var(--surface3);
+  border-radius:10px;padding:2px 7px;font-size:10px;color:var(--text2);margin:2px}
+.var-bar{height:8px;border-radius:4px;background:linear-gradient(to right,var(--accent),var(--amber),var(--red))}
+.timeline-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)}
+.timeline-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.timeline-line{width:2px;background:var(--border);flex-shrink:0;align-self:stretch;margin-left:4px}
+</style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <h1>Power Studio</h1>
+  <span class="pill">Power Analysis</span>
+  <div class="topbar-right">
+  </div>
+</header>
+
+<div class="body">
+<!-- ── Sidebar: inputs ── -->
+<aside class="sidebar">
+
+  <div class="sb-section">
+    <div class="sb-label">Study Design</div>
+
+    <div class="form-group">
+      <label class="form-label">Calculation mode</label>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="mode-n" onclick="setMode('n')">Sample Size</button>
+        <button class="toggle-btn" id="mode-power" onclick="setMode('power')">Power</button>
+        <button class="toggle-btn" id="mode-delta" onclick="setMode('delta')">Min. Δ</button>
+      </div>
+      <div class="form-hint" id="modeHint" style="margin-top:5px">
+        Calculate the required n per group given power and effect size.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Test type</label>
+      <select class="form-select" id="testType" onchange="onTestTypeChange()">
+        <option value="two-sided">t-test — two-sided (two-tailed)</option>
+        <option value="one-sided">t-test — one-sided (one-tailed)</option>
+        <option value="anova">One-way ANOVA (multi-group)</option>
+      </select>
+      <div class="form-hint" id="testTypeHint">Compares two group means. Most common for PDX efficacy studies.</div>
+    </div>
+
+    <div class="form-group" id="designTypeRow">
+      <label class="form-label">Study design</label>
+      <select class="form-select" id="designType" onchange="onDesignTypeChange()">
+        <option value="superiority">Superiority (detect a difference)</option>
+        <option value="noninferiority">Non-inferiority (not worse by margin)</option>
+        <option value="equivalence">Equivalence (within ± margin)</option>
+      </select>
+      <div class="form-hint" id="designTypeHint">Standard test: is there a difference between groups?</div>
+    </div>
+
+    <div class="form-group" id="marginRow" style="display:none">
+      <label class="form-label">Margin (Δ<sub>NI</sub> / equivalence bound)</label>
+      <input class="form-input" type="number" id="niMargin" value="20" min="0" step="1" oninput="calculate()">
+      <div class="form-hint">Largest difference still considered acceptable (same units as means).</div>
+    </div>
+
+    <div class="form-group" id="varAssumpRow">
+      <label class="form-label">Variance assumption</label>
+      <select class="form-select" id="varAssump" onchange="calculate()">
+        <option value="unpooled">Unpooled (Welch) — σ₁ ≠ σ₂</option>
+        <option value="pooled">Pooled — σ₁ = σ₂</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Statistical Parameters</div>
+
+    <div class="form-group">
+      <label class="form-label">Significance level α</label>
+      <select class="form-select" id="alpha" onchange="calculate()">
+        <option value="0.1">0.10</option>
+        <option value="0.05" selected>0.05</option>
+        <option value="0.02">0.02</option>
+        <option value="0.01">0.01</option>
+      </select>
+    </div>
+
+    <div class="form-group" id="powerInputGroup">
+      <label class="form-label">Desired power (1 − β): <strong id="powerLabel">80%</strong></label>
+      <input type="range" id="powerSlider" min="50" max="99" value="80" step="1"
+             oninput="document.getElementById('powerLabel').textContent=this.value+'%'; calculate()">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:2px">
+        <span>50%</span><span>80%</span><span>95%</span><span>99%</span>
+      </div>
+    </div>
+
+    <div class="form-group" id="nInputGroup" style="display:none">
+      <label class="form-label">Known sample size n per group</label>
+      <input class="form-input" type="number" id="nKnown" value="10" min="2" oninput="calculate()">
+    </div>
+
+  </div>
+
+
+  <div class="sb-section">
+    <div class="sb-label">Group Parameters</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Group 1 mean</label>
+        <input class="form-input" type="number" id="mean1" value="200" step="any" oninput="calculate()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Group 2 mean</label>
+        <input class="form-input" type="number" id="mean2" value="100" step="any" oninput="calculate()">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Group 1 SD</label>
+        <input class="form-input" type="number" id="sd1" value="60" min="0.01" step="any" oninput="calculate()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Group 2 SD</label>
+        <input class="form-input" type="number" id="sd2" value="30" min="0.01" step="any" oninput="calculate()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <label class="form-label" style="margin:0">Don't know SD? Calculate from CV%</label>
+        <button class="btn btn-sm" onclick="cvToSD()" style="font-size:10px;padding:2px 8px">Apply</button>
+      </div>
+      <input class="form-input" type="number" id="cv" placeholder="Enter CV% (e.g. 30)" step="any">
+      <div class="form-hint">SD = mean × CV / 100 · click Apply to fill SD fields above</div>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">📉 PDX Variability Sensitivity</div>
+    <div class="form-group">
+      <label class="form-label">Simulate CV% increase: <strong id="varSliderLabel">0%</strong> above baseline</label>
+      <input type="range" id="varSlider" min="0" max="100" value="0" step="5"
+             oninput="document.getElementById('varSliderLabel').textContent=this.value+'%'; calculate()">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:2px">
+        <span>No change</span><span>+50%</span><span>+100%</span>
+      </div>
+    </div>
+    <div id="varImpact" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Study Setup (for Justification)</div>
+
+    <div class="form-group">
+      <label class="form-label">Efficacy animals per arm</label>
+      <input class="form-input" type="number" id="nEfficacyDisplay"
+             style="color:var(--accent);font-weight:600;background:var(--surface3);cursor:default"
+             readonly tabindex="-1">
+      <div class="form-hint">Auto-calculated from sample size above</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Dropout / attrition rate (%, if needed)</label>
+      <input class="form-input" type="number" id="dropout" value="0" min="0" max="99" step="1" oninput="calculate()">
+      <div class="form-hint">Inflates n to account for expected loss. Minimum adjustment: +1 animal.</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">PD / pharmacodynamic animals per arm</label>
+      <input class="form-input" type="number" id="nPD" value="3" min="0" step="1" oninput="calculate()">
+      <div class="form-hint">Euthanized early for tissue collection (added to efficacy n)</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Additional sampling timepoints (if needed)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div>
+          <input class="form-input" type="number" id="nTimepoints" value="0" min="0" step="1" oninput="calculate()" placeholder="# timepoints">
+          <div class="form-hint">timepoints</div>
+        </div>
+        <div>
+          <input class="form-input" type="number" id="nPerTimepoint" value="3" min="1" step="1" oninput="calculate()" placeholder="n / timepoint">
+          <div class="form-hint">animals / tp</div>
+        </div>
+        <div>
+          <input class="form-input" type="number" id="nArmsTimepoint" value="2" min="1" step="1" oninput="calculate()" placeholder="# arms">
+          <div class="form-hint">selected arms</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary: n per arm -->
+    <div style="background:var(--surface2);border-radius:var(--r);padding:10px 12px;
+                border:1px solid var(--border);margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+                  color:var(--text3);margin-bottom:6px">Animals per arm summary</div>
+      <div id="perArmSummary" style="font-size:12px;color:var(--text2);line-height:1.8"></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Experimental arms</label>
+        <input class="form-input" type="number" id="nArms" value="4" min="1" step="1" oninput="calculate()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Models</label>
+        <input class="form-input" type="number" id="nModels" value="1" min="1" step="1" oninput="calculate()">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Engraftment / take rate (%)</label>
+      <input class="form-input" type="number" id="takeRate" value="70" min="1" max="100" step="1" oninput="calculate()">
+      <div class="form-hint">Total mice = (n/arm × arms × models) / take rate</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Study name / drug (optional)</label>
+      <input class="form-input" type="text" id="studyName" placeholder="e.g. Drug X vs Vehicle" oninput="calculate()">
+    </div>
+  </div>
+
+</aside>
+
+<!-- ── Main content ── -->
+<main class="main">
+
+  <!-- Primary result -->
+  <div class="card" id="resultCard">
+    <div class="card-hdr">
+      <h2 id="resultTitle">Sample Size per Group</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto" id="resultSubtitle"></span>
+    </div>
+    <div class="card-body">
+
+      <!-- Key stats -->
+      <div class="stat-grid" id="keyStats" style="margin-bottom:16px"></div>
+
+      <!-- Interpretation -->
+      <div class="interp" id="interpBox" style="margin-bottom:16px"></div>
+
+      <!-- Full table: all alpha × power combinations -->
+      <div style="margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text2);
+                  text-transform:uppercase;letter-spacing:.5px">
+        Sample size table — all α × Power combinations
+      </div>
+      <div style="overflow-x:auto">
+        <table class="result-tbl" id="fullTable">
+          <thead>
+            <tr>
+              <th style="text-align:left">α \ Power</th>
+              <th>50%</th><th>80%</th><th>90%</th><th>95%</th>
+            </tr>
+          </thead>
+          <tbody id="fullTableBody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px">
+        Each cell = n per group (round up to nearest integer). Highlighted cell = your current selection.
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistical Justification -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2 style="color:var(--accent)">📋 Statistical Justification</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Ready-to-use text for IACUC / ethics submission
+      </span>
+      <button class="btn btn-sm" onclick="copyJustification()" style="margin-left:8px">📋 Copy</button>
+    </div>
+    <div class="card-body">
+      <div id="justifBox" style="
+        background:var(--surface2);border-radius:var(--r);padding:16px;
+        font-size:12px;line-height:1.8;color:var(--text2);border:1px solid var(--border);
+        white-space:pre-wrap;font-family:'Segoe UI',system-ui,sans-serif">
+      </div>
+      <!-- Total animals stat -->
+      <div id="totalAnimalsBox" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- Study design visual -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>Study Design Visual</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Schematic of expected group trajectories based on your inputs
+      </span>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px">
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="designChart"></canvas>
+          </div>
+        </div>
+        <!-- Legend / values panel -->
+        <div id="designLegend" style="min-width:160px;display:flex;flex-direction:column;gap:10px;padding-top:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Power curve -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>Power Curve</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Power vs sample size for selected α — vertical line = current selection
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="powerChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sensitivity: n vs delta -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>Sensitivity Analysis</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Required n vs detectable difference (% of Group 1 mean)
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" style="height:260px">
+        <canvas id="sensitChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- SD sensitivity heatmap -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>SD Sensitivity Heatmap</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        n per group as SD and Δ vary — darker = larger sample needed
+      </span>
+    </div>
+    <div class="card-body" id="heatmapBody"></div>
+  </div>
+
+
+  <!-- Multi-group ANOVA comparison -->
+  <div class="card" id="anovaCard" style="display:none">
+    <div class="card-hdr">
+      <h2>Multi-group Power (ANOVA)</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Required n per group to detect effect across all arms simultaneously
+      </span>
+    </div>
+    <div class="card-body">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
+        One-way ANOVA with Dunnett's correction (each arm vs control). 
+        Effect size f = signal / noise across all groups.
+      </div>
+      <div id="anovaResult"></div>
+      <div class="chart-wrap" style="height:220px;margin-top:12px">
+        <canvas id="anovaChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Methodology notes -->
+  <div class="card">
+    <div class="card-hdr"><h2>Methodology & Formulas</h2></div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:10px;font-size:12px;color:var(--text2);line-height:1.7">
+      <div><strong style="color:var(--text)">Formula (unpooled / Welch):</strong><br>
+        n = (t<sub>α/2,df</sub> + t<sub>β,df</sub>)² × (σ₁² + σ₂²) / Δ²<br>
+        where Δ = |μ₁ − μ₂|, df = 2(n−1).
+      </div>
+      <div><strong style="color:var(--text)">Formula (pooled):</strong><br>
+        n = (t<sub>α/2,df</sub> + t<sub>β,df</sub>)² × 2σ² / Δ²<br>
+        where σ² = (σ₁² + σ₂²) / 2 (average variance).
+      </div>
+      <div><strong style="color:var(--text)">t-distribution correction:</strong><br>
+        Critical values use Student's t (not normal z), solved iteratively since
+        df depends on n. This matches G*Power and prevents under-sizing at small n —
+        important for typical animal group sizes.
+      </div>
+      <div><strong style="color:var(--text)">Study designs:</strong><br>
+        <em>Superiority</em> — detect any difference (two- or one-sided).<br>
+        <em>Non-inferiority</em> — show treatment is not worse by more than the margin
+        (one-sided; effect size = assumed difference + margin).<br>
+        <em>Equivalence</em> — show groups differ by less than ± margin
+        (two one-sided tests / TOST; effect size = margin − |assumed difference|).
+      </div>
+      <div><strong style="color:var(--text)">Bonferroni correction:</strong><br>
+        When comparing k groups, α is divided by k(k−1)/2 pairwise comparisons.
+      </div>
+      <div><strong style="color:var(--text)">Dropout adjustment:</strong><br>
+        n<sub>adjusted</sub> = ceil(n / (1 − dropout%/100))
+      </div>
+      <div><strong style="color:var(--text)">AEUC guidance (A/B/C interpretation):</strong></div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px">
+        <strong style="color:var(--text3)">A (minimum)</strong><span>Power = 50% — lowest justifiable n, high risk of missing effect</span>
+        <strong style="color:var(--accent)">B (optimum)</strong><span>Power = 80–90% — standard for most animal studies</span>
+        <strong style="color:var(--amber)">C (maximum)</strong><span>Power = 95% — maximum before study is over-powered</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px">
+        Based on AEUC/IACUC guidelines. Reference: Festing & Altman (2002). 
+        Guidelines for the Design and Statistical Analysis of Experiments Using Laboratory Animals.
+      </div>
+    </div>
+  </div>
+
+  <!-- Budget Estimator -->
+  <div class="card">
+    <div class="card-hdr">
+      <h2>💰 Budget Estimator</h2>
+      <span style="font-size:10px;color:var(--text3);margin-left:auto">
+        Approximate cost based on study design — adjust prices to your institution
+      </span>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+
+        <!-- Animals -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px">Animals</div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Total animals (auto)</label>
+            <input class="form-input" id="budgN" readonly tabindex="-1"
+                   style="color:var(--accent);font-weight:600;background:var(--surface3);cursor:default">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Price per animal ($)</label>
+            <input class="form-input" type="number" id="budgPriceAnimal" value="150" min="0" step="1" oninput="calcBudget()">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Supplies / consumables per animal ($)</label>
+            <input class="form-input" type="number" id="budgSupplies" value="30" min="0" step="1" oninput="calcBudget()">
+          </div>
+        </div>
+
+        <!-- Housing -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px">Housing</div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Study duration (days)</label>
+            <input class="form-input" type="number" id="budgDays" value="80" min="1" step="1" oninput="calcBudget()">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Housing cost per cage per day ($)</label>
+            <input class="form-input" type="number" id="budgCageDay" value="1.5" min="0" step="0.1" oninput="calcBudget()">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Animals per cage</label>
+            <input class="form-input" type="number" id="budgPerCage" value="5" min="1" step="1" oninput="calcBudget()">
+          </div>
+        </div>
+
+        <!-- Shipping -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px">Shipping</div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Shipping cost per box ($)</label>
+            <input class="form-input" type="number" id="budgShipBox" value="100" min="0" step="10" oninput="calcBudget()">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Animals per shipping box</label>
+            <input class="form-input" type="number" id="budgShipSize" value="50" min="1" step="1" oninput="calcBudget()">
+          </div>
+        </div>
+
+        <!-- Other -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:2px">Other</div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Additional costs ($)</label>
+            <input class="form-input" type="number" id="budgOther" value="0" min="0" step="100" oninput="calcBudget()">
+            <div class="form-hint">e.g. imaging, histology, genotyping</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="budgetResult"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<footer>Power Studio &copy; 2026 Alexey Sorokin &nbsp;·&nbsp; For research planning use only — consult a statistician for regulatory submissions</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let calcMode = 'n'; // 'n' | 'power' | 'delta'
+let powerChart = null, sensitChart = null, designChart = null;
+
+// ── Design visual chart ───────────────────────────────────────────────────────
+function renderDesignChart(m1, m2, sd1, sd2, nDisplay, sd1boost, sd2boost) {
+  const g1color = '#D0D5D8';
+  const g2color = '#F4745B';
+  const hasBoost = sd1boost != null && sd2boost != null;
+
+  const steps = 10;
+  const labels = Array.from({length:steps+1},(_,i)=>i);
+
+  const g1data   = labels.map(t => +(m1 * t/steps).toFixed(1));
+  const g1upper  = labels.map(t => +((m1 + sd1) * t/steps).toFixed(1));
+  const g1lower  = labels.map(t => +((m1 - sd1) * t/steps).toFixed(1));
+  const g2data   = labels.map(t => +(m2 * t/steps).toFixed(1));
+  const g2upper  = labels.map(t => +((m2 + sd2) * t/steps).toFixed(1));
+  const g2lower  = labels.map(t => +((m2 - sd2) * t/steps).toFixed(1));
+
+  // Boosted bands (shown when CV slider is active)
+  const g1upperB = hasBoost ? labels.map(t => +((m1 + sd1boost) * t/steps).toFixed(1)) : [];
+  const g1lowerB = hasBoost ? labels.map(t => +((m1 - sd1boost) * t/steps).toFixed(1)) : [];
+  const g2upperB = hasBoost ? labels.map(t => +((m2 + sd2boost) * t/steps).toFixed(1)) : [];
+  const g2lowerB = hasBoost ? labels.map(t => +((m2 - sd2boost) * t/steps).toFixed(1)) : [];
+
+  const datasets = [
+    // Original SD bands
+    { label:'_g1u', data:g1upper, borderWidth:0, pointRadius:0,
+      backgroundColor:'rgba(208,213,216,0.12)', fill:'+1', tension:0.3 },
+    { label:'_g1l', data:g1lower, borderWidth:0, pointRadius:0,
+      backgroundColor:'transparent', fill:false, tension:0.3 },
+    { label:'_g2u', data:g2upper, borderWidth:0, pointRadius:0,
+      backgroundColor:'rgba(244,116,91,0.12)', fill:'+1', tension:0.3 },
+    { label:'_g2l', data:g2lower, borderWidth:0, pointRadius:0,
+      backgroundColor:'transparent', fill:false, tension:0.3 },
+    // Boosted SD bands (dashed outline when CV simulated)
+    ...(hasBoost ? [
+      { label:'_g1uB', data:g1upperB, borderColor:'rgba(245,168,35,0.5)',
+        borderWidth:1, borderDash:[4,3], pointRadius:0, fill:'+1',
+        backgroundColor:'rgba(245,168,35,0.07)', tension:0.3 },
+      { label:'_g1lB', data:g1lowerB, borderWidth:0, pointRadius:0,
+        backgroundColor:'transparent', fill:false, tension:0.3 },
+      { label:'_g2uB', data:g2upperB, borderColor:'rgba(245,168,35,0.5)',
+        borderWidth:1, borderDash:[4,3], pointRadius:0, fill:'+1',
+        backgroundColor:'rgba(245,168,35,0.07)', tension:0.3 },
+      { label:'_g2lB', data:g2lowerB, borderWidth:0, pointRadius:0,
+        backgroundColor:'transparent', fill:false, tension:0.3 },
+    ] : []),
+    // Mean lines
+    { label:'Group 1', data:g1data, borderColor:g1color, borderWidth:2.5,
+      pointRadius:0, tension:0.3, fill:false },
+    { label:'Group 2', data:g2data, borderColor:g2color, borderWidth:2.5,
+      pointRadius:0, tension:0.3, fill:false },
+  ];
+
+  if (designChart) designChart.destroy();
+  designChart = new Chart(document.getElementById('designChart'), {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ filter: i => !i.dataset.label.startsWith('_') }
+      },
+      scales:{
+        y:{
+          title:{display:true, text:'TVC (%)', color:'#F0F4F5', font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.15)'},
+          ticks:{color:'#F0F4F5', callback:v=>v+'%'},
+          border:{color:'rgba(200,208,212,0.5)', width:2},
+        },
+        x:{
+          title:{display:true, text:'Treatment time (days)', color:'#F0F4F5', font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.08)'},
+          ticks:{color:'#F0F4F5'},
+          border:{color:'rgba(200,208,212,0.5)', width:2},
+        }
+      }
+    },
+    plugins:[{
+      id:'boldAxes',
+      afterDraw(chart){
+        const {ctx,chartArea:a,scales:{x,y}} = chart;
+        if(!a) return;
+        ctx.save();
+        ctx.strokeStyle='rgba(200,208,212,0.9)'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(a.left,a.top); ctx.lineTo(a.left,a.bottom); ctx.stroke();
+        const y0=y.getPixelForValue(0);
+        if(y0>=a.top&&y0<=a.bottom){
+          ctx.beginPath(); ctx.moveTo(a.left,y0); ctx.lineTo(a.right,y0); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }]
+  });
+
+  // Legend panel
+  const delta = Math.abs(m1 - m2);
+  const boostPct = hasBoost ? ((sd1boost/sd1-1)*100).toFixed(0) : 0;
+  document.getElementById('designLegend').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <div style="width:24px;height:3px;background:${g1color};border-radius:2px;flex-shrink:0"></div>
+        <span style="font-size:12px;font-weight:600;color:${g1color}">Group 1</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);padding-left:32px;display:flex;flex-direction:column;gap:2px">
+        <span>mean = <strong style="color:var(--text)">${m1}</strong></span>
+        <span>SD = <strong style="color:var(--text)">${sd1}</strong>${hasBoost?' → <strong style="color:var(--amber)">'+sd1boost.toFixed(1)+'</strong>':''}</span>
+        <span>CV = <strong style="color:var(--text)">${m1?(sd1/m1*100).toFixed(0):'-'}%</strong>${hasBoost?' → <strong style="color:var(--amber)">'+(sd1boost/m1*100).toFixed(0)+'%</strong>':''}</span>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border)"></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <div style="width:24px;height:3px;background:${g2color};border-radius:2px;flex-shrink:0"></div>
+        <span style="font-size:12px;font-weight:600;color:${g2color}">Group 2</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);padding-left:32px;display:flex;flex-direction:column;gap:2px">
+        <span>mean = <strong style="color:var(--text)">${m2}</strong></span>
+        <span>SD = <strong style="color:var(--text)">${sd2}</strong>${hasBoost?' → <strong style="color:var(--amber)">'+sd2boost.toFixed(1)+'</strong>':''}</span>
+        <span>CV = <strong style="color:var(--text)">${m2?(sd2/m2*100).toFixed(0):'-'}%</strong>${hasBoost?' → <strong style="color:var(--amber)">'+(sd2boost/m2*100).toFixed(0)+'%</strong>':''}</span>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border)"></div>
+    <div style="font-size:11px;color:var(--text3);display:flex;flex-direction:column;gap:3px">
+      <span>|Δ| = <strong style="color:var(--accent)">${delta.toFixed(1)}</strong></span>
+      <span>Δ% = <strong style="color:var(--accent)">${m1?(delta/m1*100).toFixed(1):'-'}%</strong></span>
+    </div>
+    ${hasBoost?'<div style="font-size:10px;color:var(--amber);border:1px dashed rgba(245,168,35,0.5);border-radius:4px;padding:5px 8px;margin-top:2px">⚠ Dashed band = +'+boostPct+'% CV simulation</div>':''}
+  `;
+}
+
+// ── Z quantile (inverse normal CDF, Beasley-Springer-Moro approximation) ──────
+function zScore(p) {
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  const a = [2.515517, 0.802853, 0.010328];
+  const b = [1.432788, 0.189269, 0.001308];
+  const t = Math.sqrt(-2 * Math.log(Math.min(p, 1-p)));
+  const num = a[0] + t*(a[1] + t*a[2]);
+  const den = 1 + t*(b[0] + t*(b[1] + t*b[2]));
+  const z = t - num/den;
+  return p < 0.5 ? -z : z;
+}
+
+// Standard normal CDF (Hart approximation)
+function normalCDF(z) {
+  const t = 1 / (1 + 0.2316419 * Math.abs(z));
+  const d = 0.3989423 * Math.exp(-z*z/2);
+  const p = d * t * (0.3193815 + t*(-0.3565638 + t*(1.7814779 + t*(-1.8212560 + t*1.3302744))));
+  return z > 0 ? 1-p : p;
+}
+
+// ── t-distribution (for small-sample correction) ───────────────────────────────
+// log-gamma (Lanczos)
+function lgammaPS(x) {
+  const c = [76.18009172947146,-86.50532032941677,24.01409824083091,
+             -1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];
+  let y=x, t=x+5.5; t-=(x+0.5)*Math.log(t);
+  let s=1.000000000190015; for(let j=0;j<6;j++) s+=c[j]/++y;
+  return -t + Math.log(2.5066282746310005*s/x);
+}
+// regularized incomplete beta I_x(a,b)
+function incBeta(x,a,b){
+  if(x<=0) return 0; if(x>=1) return 1;
+  const lbeta = lgammaPS(a)+lgammaPS(b)-lgammaPS(a+b);
+  const front = Math.exp(Math.log(x)*a + Math.log(1-x)*b - lbeta)/a;
+  // continued fraction (Lentz)
+  let f=1,c=1,d=0;
+  for(let i=0;i<=200;i++){
+    const m=Math.floor(i/2);
+    let num;
+    if(i===0) num=1;
+    else if(i%2===0) num=(m*(b-m)*x)/((a+2*m-1)*(a+2*m));
+    else num=-((a+m)*(a+b+m)*x)/((a+2*m)*(a+2*m+1));
+    d=1+num*d; if(Math.abs(d)<1e-30)d=1e-30; d=1/d;
+    c=1+num/c; if(Math.abs(c)<1e-30)c=1e-30;
+    const cd=c*d; f*=cd;
+    if(Math.abs(1-cd)<1e-10) break;
+  }
+  if(x < (a+1)/(a+b+2)) return front*(f-1);
+  return 1 - incBeta(1-x,b,a);
+}
+// CDF of Student's t with df degrees of freedom
+function tCDF(t, df){
+  if(!isFinite(t)) return t>0?1:0;
+  const x = df/(df+t*t);
+  const ib = 0.5*incBeta(x, df/2, 0.5);
+  return t>0 ? 1-ib : ib;
+}
+// Inverse CDF (quantile) of Student's t — bisection seeded by normal quantile
+function tQuantile(p, df){
+  if(p<=0) return -Infinity; if(p>=1) return Infinity;
+  if(df > 1e6) return zScore(p);
+  let lo=-100, hi=100;
+  for(let i=0;i<200;i++){
+    const mid=(lo+hi)/2;
+    if(tCDF(mid,df) < p) lo=mid; else hi=mid;
+    if(hi-lo<1e-8) break;
+  }
+  return (lo+hi)/2;
+}
+
+// ── Core formula ───────────────────────────────────────────────────────────────
+function calcN(delta, sd1, sd2, alpha, power, twoSided, pooled, design, margin) {
+  design = design || 'superiority';
+  if (sd1 <= 0 || sd2 <= 0) return null;
+  if (design === 'superiority' && delta <= 0) return null;
+  delta = Math.abs(delta);
+
+  // Effective two-sided/one-sided depends on design.
+  // Non-inferiority & equivalence use a one-sided alpha against the margin.
+  // Superiority effect size; NI/equiv use (delta_assumed +/- margin).
+  let effDelta = delta, oneSidedNI = false;
+  if (design === 'noninferiority') {
+    // H0: difference >= margin (worse). Effect = assumed true diff (often 0) shifted by margin.
+    effDelta = (delta) + (margin || 0);   // delta here = assumed true difference favoring treatment (>=0)
+    oneSidedNI = true;
+  } else if (design === 'equivalence') {
+    // TOST: each one-sided test at alpha; effect = margin - |assumed diff|
+    effDelta = (margin || 0) - Math.abs(delta);
+    oneSidedNI = true;
+    if (effDelta <= 0) return null; // assumed diff exceeds margin → infeasible
+  }
+
+  // Pooled variance assumes equal SDs → use pooled SD (average of variances).
+  // Welch (unpooled) keeps both variances separate.
+  const variance = pooled
+    ? 2 * ((sd1*sd1 + sd2*sd2) / 2)   // = sd1²+sd2² when equal; explicit pooled form
+    : (sd1*sd1 + sd2*sd2);
+
+  const useOneSided = oneSidedNI || !twoSided;
+
+  // Iterate to apply t-distribution correction (df depends on n).
+  // Seed with the z-based estimate, then refine 2–3×.
+  const za0 = zScore(useOneSided ? 1 - alpha : 1 - alpha/2);
+  const zb  = zScore(power);
+  let n = Math.pow(za0 + zb, 2) * variance / (effDelta * effDelta);
+  for (let it=0; it<6; it++){
+    const df = Math.max(1, 2*(Math.ceil(n) - 1));
+    const ta = tQuantile(useOneSided ? 1 - alpha : 1 - alpha/2, df);
+    const tb = tQuantile(power, df);
+    const nNew = Math.pow(ta + tb, 2) * variance / (effDelta * effDelta);
+    if (Math.abs(nNew - n) < 1e-4) { n = nNew; break; }
+    n = nNew;
+  }
+  return n;
+}
+
+function calcPower(n, delta, sd1, sd2, alpha, twoSided, pooled, design, margin) {
+  if (n <= 0 || sd1 <= 0 || sd2 <= 0) return null;
+  design = design || 'superiority';
+  let effDelta = Math.abs(delta), oneSidedNI = false;
+  if (design === 'noninferiority') { effDelta = Math.abs(delta) + (margin||0); oneSidedNI = true; }
+  else if (design === 'equivalence') { effDelta = (margin||0) - Math.abs(delta); oneSidedNI = true; if (effDelta<=0) return 0; }
+
+  const variance = pooled ? 2*((sd1*sd1+sd2*sd2)/2) : (sd1*sd1 + sd2*sd2);
+  const useOneSided = oneSidedNI || !twoSided;
+  const df = Math.max(1, 2*(n - 1));
+  const se = Math.sqrt(variance / n);
+  const ta = tQuantile(useOneSided ? 1 - alpha : 1 - alpha/2, df);
+  // Power = P(T > t_alpha) under noncentral shift ≈ t-CDF of (effDelta/se − t_alpha)
+  const ncp = effDelta / se;
+  const pw = 1 - tCDF(ta - ncp, df);
+  return Math.max(0, Math.min(1, pw));
+}
+
+function calcMinDelta(n, sd1, sd2, alpha, power, twoSided, pooled) {
+  if (n <= 0 || sd1 <= 0 || sd2 <= 0) return null;
+  const variance = (pooled ? 2*((sd1*sd1+sd2*sd2)/2) : (sd1*sd1 + sd2*sd2));
+  const df = Math.max(1, 2*(n - 1));
+  const ta = tQuantile(twoSided ? 1 - alpha/2 : 1 - alpha, df);
+  const tb = tQuantile(power, df);
+  return (ta + tb) * Math.sqrt(variance / n);
+}
+
+function applyDropout(n, dropPct) {
+  if (dropPct <= 0) return n;
+  const inflated = n / (1 - dropPct/100);
+  // If dropout inflation adds < 1 animal, force at least 1 extra
+  if (Math.ceil(inflated) <= Math.ceil(n)) return Math.ceil(n) + 1;
+  return inflated;
+}
+
+// Check if dropout was adjusted to minimum 1 animal
+function dropoutWasAdjusted(n, dropPct) {
+  if (dropPct <= 0) return false;
+  const inflated = n / (1 - dropPct/100);
+  return Math.ceil(inflated) <= Math.ceil(n);
+}
+
+
+function onTestTypeChange() {
+  const v = document.getElementById('testType').value;
+  const hints = {
+    'two-sided': 'Compares two group means. Most common for PDX efficacy studies.',
+    'one-sided': 'Tests if treatment is better than control (directional hypothesis).',
+    'anova':     'Tests difference across all arms simultaneously. Requires 3+ groups. Use Dunnetts correction (each arm vs control).'
+  };
+  document.getElementById('testTypeHint').textContent = hints[v] || '';
+  // Show/hide variance assumption (not applicable for ANOVA)
+  const varRow = document.getElementById('varAssumpRow');
+  if (varRow) varRow.style.display = v === 'anova' ? 'none' : '';
+  // Hide design-type for ANOVA (only applies to 2-group t-tests)
+  const dtRow = document.getElementById('designTypeRow');
+  if (dtRow) dtRow.style.display = v === 'anova' ? 'none' : '';
+  if (v === 'anova') document.getElementById('marginRow').style.display = 'none';
+  else onDesignTypeChange();
+  calculate();
+}
+
+function onDesignTypeChange() {
+  const d = document.getElementById('designType').value;
+  const hints = {
+    superiority:    'Standard test: is there a difference between groups?',
+    noninferiority: 'Show treatment is not worse than control by more than the margin (one-sided).',
+    equivalence:    'Show the two groups differ by less than ± margin (two one-sided tests, TOST).'
+  };
+  document.getElementById('designTypeHint').textContent = hints[d] || '';
+  document.getElementById('marginRow').style.display = (d === 'superiority') ? 'none' : '';
+  // For NI/equivalence the "difference" field means the *assumed true* difference
+  calculate();
+}
+// ── Mode switching ─────────────────────────────────────────────────────────────
+function setMode(m) {
+  calcMode = m;
+  ['n','power','delta'].forEach(id => {
+    document.getElementById('mode-'+id).classList.toggle('active', id===m);
+  });
+  document.getElementById('powerInputGroup').style.display = m==='n'||m==='delta' ? '' : 'none';
+  document.getElementById('nInputGroup').style.display    = m!=='n' ? '' : 'none';
+  const hints = {
+    n:     'Calculate the required n per group given power and effect size.',
+    power: 'Calculate the achieved power for a given n and effect size.',
+    delta: 'Calculate the minimum detectable difference for a given n and power.'
+  };
+  document.getElementById('modeHint').textContent = hints[m];
+  document.getElementById('resultTitle').textContent = {
+    n:'Sample Size per Group', power:'Achieved Power', delta:'Minimum Detectable Difference'
+  }[m];
+  calculate();
+}
+
+// ── CV to SD ──────────────────────────────────────────────────────────────────
+function cvToSD() {
+  const cv = parseFloat(document.getElementById('cv').value);
+  if (isNaN(cv) || cv <= 0) { alert('Please enter a valid CV% value first.'); return; }
+  const m1 = parseFloat(document.getElementById('mean1').value) || 0;
+  const m2 = parseFloat(document.getElementById('mean2').value) || 0;
+  if (m1 > 0) document.getElementById('sd1').value = (m1 * cv / 100).toFixed(1);
+  if (m2 > 0) document.getElementById('sd2').value = (m2 * cv / 100).toFixed(1);
+  calculate();
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('mean1').value = 200;
+  document.getElementById('mean2').value = 140;
+  document.getElementById('sd1').value   = 50;
+  document.getElementById('sd2').value   = 31;
+  document.getElementById('cv').value    = '';
+  document.getElementById('alpha').value = '0.05';
+  document.getElementById('powerSlider').value = 80;
+  document.getElementById('powerLabel').textContent = '80%';
+  document.getElementById('dropout').value = 0;
+  document.getElementById('nArms').value  = 7;
+  document.getElementById('nKnown').value  = 10;
+  setMode('n');
+}
+
+// ── Main calculate ─────────────────────────────────────────────────────────────
+function calculate() {
+  const m1      = parseFloat(document.getElementById('mean1').value);
+  const m2      = parseFloat(document.getElementById('mean2').value);
+  const sd1     = parseFloat(document.getElementById('sd1').value);
+  const sd2     = parseFloat(document.getElementById('sd2').value);
+  const alpha0  = parseFloat(document.getElementById('alpha').value);
+  const power   = parseFloat(document.getElementById('powerSlider').value) / 100;
+  const dropout = parseFloat(document.getElementById('dropout').value) || 0;
+  const nGroups = parseInt(document.getElementById('nArms').value) || 2;
+  const nKnown  = parseInt(document.getElementById('nKnown').value)  || 10;
+  const testTypeVal = document.getElementById('testType').value;
+  const isANOVA  = testTypeVal === 'anova';
+  const twoSided = !isANOVA && testTypeVal !== 'one-sided';
+  const pooled   = document.getElementById('varAssump').value === 'pooled';
+  const design   = isANOVA ? 'superiority' : (document.getElementById('designType')?.value || 'superiority');
+  const niMargin = parseFloat(document.getElementById('niMargin')?.value) || 0;
+
+  if (isNaN(m1)||isNaN(m2)||isNaN(sd1)||isNaN(sd2)) return;
+
+  // Apply variability slider (PDX sensitivity)
+  const varBoost = parseFloat(document.getElementById('varSlider')?.value||0)/100;
+  const sd1adj = sd1 * (1 + varBoost);
+  const sd2adj = sd2 * (1 + varBoost);
+  if (varBoost > 0) {
+    const baseN  = Math.ceil(calcN(Math.abs(m1-m2),sd1,sd2,alpha0,power,twoSided,pooled)||0);
+    const boostN = Math.ceil(calcN(Math.abs(m1-m2),sd1adj,sd2adj,alpha0,power,twoSided,pooled)||0);
+    const varEl  = document.getElementById('varImpact');
+    if (varEl) varEl.innerHTML = `<span style="color:var(--amber)">⚠ +${(varBoost*100).toFixed(0)}% CV → n increases from <strong>${baseN}</strong> to <strong>${boostN}</strong> per group (+${boostN-baseN} animals)</span>`;
+  } else {
+    const varEl = document.getElementById('varImpact');
+    if (varEl) varEl.innerHTML = '';
+  }
+  const sd1v = sd1adj, sd2v = sd2adj;
+
+  const delta = Math.abs(m1 - m2);
+  const pairs = nGroups*(nGroups-1)/2;
+  // For t-test: nGroups only affects total animal count, NOT the alpha/sample size
+  // Bonferroni correction only applied in ANOVA mode
+  const alpha = (isANOVA && nGroups > 2) ? alpha0 / pairs : alpha0;
+
+  // ── Mode-specific primary result ──────────────────────────────────────────
+  let primaryN = null, primaryPower = null, primaryDelta = null;
+
+  if (calcMode === 'n') {
+    const nRaw = calcN(delta, sd1v||sd1, sd2v||sd2, alpha, power, twoSided, pooled, design, niMargin);
+    if (nRaw == null) return;
+    primaryN = applyDropout(nRaw, dropout);
+    primaryPower = power;
+    primaryDelta = delta;
+  } else if (calcMode === 'power') {
+    primaryPower = calcPower(nKnown, delta, sd1, sd2, alpha, twoSided, pooled, design, niMargin);
+    primaryN = nKnown;
+    primaryDelta = delta;
+  } else {
+    primaryDelta = calcMinDelta(nKnown, sd1, sd2, alpha, power, twoSided, pooled);
+    primaryN = nKnown;
+    primaryPower = power;
+  }
+
+  // ── Effect size (Cohen's d) ────────────────────────────────────────────────
+  const sdPooled = Math.sqrt((sd1*sd1 + sd2*sd2) / 2);
+  const cohensD  = delta / sdPooled;
+  const effectLabel = cohensD < 0.2 ? 'Very small' : cohensD < 0.5 ? 'Small' :
+                      cohensD < 0.8 ? 'Medium' : cohensD < 1.2 ? 'Large' : 'Very large';
+  const deltaPct = m1 !== 0 ? Math.abs(delta / m1 * 100).toFixed(1) : '—';
+
+  // ── A/B/C min/opt/max ─────────────────────────────────────────────────────
+  const nA = applyDropout(calcN(delta,sd1,sd2,alpha,0.50,twoSided,pooled)||0, dropout);
+  const nB = applyDropout(calcN(delta,sd1,sd2,alpha,0.80,twoSided,pooled)||0, dropout);
+  const nC = applyDropout(calcN(delta,sd1,sd2,alpha,0.95,twoSided,pooled)||0, dropout);
+
+  // ── Render key stats ──────────────────────────────────────────────────────
+  const statsEl = document.getElementById('keyStats');
+  if (calcMode === 'n') {
+    statsEl.innerHTML = `
+      <div class="stat"><div class="stat-lbl">n minimum (A)</div>
+        <div class="stat-val" style="color:var(--text3)">${Math.ceil(nA)}</div>
+        <div class="stat-sub">Power 50%</div></div>
+      <div class="stat highlight"><div class="stat-lbl">n optimum (B)</div>
+        <div class="stat-val">${Math.ceil(calcMode==='n'?primaryN:nB)}</div>
+        <div class="stat-sub">Power ${Math.round(power*100)}% (your selection)</div></div>
+      <div class="stat warn"><div class="stat-lbl">n maximum (C)</div>
+        <div class="stat-val">${Math.ceil(nC)}</div>
+        <div class="stat-sub">Power 95%</div></div>
+      <div class="stat"><div class="stat-lbl">Total animals</div>
+        <div class="stat-val">${Math.ceil(primaryN) * nGroups}</div>
+        <div class="stat-sub">${nGroups} groups × ${Math.ceil(primaryN)}</div></div>
+      <div class="stat"><div class="stat-lbl">Cohen's d</div>
+        <div class="stat-val" style="font-size:20px">${cohensD.toFixed(2)}</div>
+        <div class="stat-sub">${effectLabel} effect</div></div>
+      <div class="stat"><div class="stat-lbl">Δ / μ₁</div>
+        <div class="stat-val" style="font-size:20px">${deltaPct}%</div>
+        <div class="stat-sub">|${delta.toFixed(1)}| / ${m1}</div></div>
+    `;
+  } else if (calcMode === 'power') {
+    const pct = primaryPower!=null ? (primaryPower*100).toFixed(1) : '—';
+    const col = primaryPower >= 0.8 ? 'var(--accent)' : primaryPower >= 0.5 ? 'var(--amber)' : 'var(--red)';
+    statsEl.innerHTML = `
+      <div class="stat highlight"><div class="stat-lbl">Achieved power</div>
+        <div class="stat-val" style="color:${col}">${pct}%</div>
+        <div class="stat-sub">n = ${nKnown} per group</div></div>
+      <div class="stat"><div class="stat-lbl">β (miss rate)</div>
+        <div class="stat-val" style="font-size:20px">${primaryPower!=null?(100-primaryPower*100).toFixed(1):'—'}%</div>
+        <div class="stat-sub">Prob. of false negative</div></div>
+      <div class="stat"><div class="stat-lbl">Cohen's d</div>
+        <div class="stat-val" style="font-size:20px">${cohensD.toFixed(2)}</div>
+        <div class="stat-sub">${effectLabel} effect</div></div>
+      <div class="stat"><div class="stat-lbl">Total animals</div>
+        <div class="stat-val">${nKnown * nGroups}</div>
+        <div class="stat-sub">${nGroups} × ${nKnown}</div></div>
+    `;
+  } else {
+    const dPct = primaryDelta!=null && m1 ? (primaryDelta/m1*100).toFixed(1) : '—';
+    statsEl.innerHTML = `
+      <div class="stat highlight"><div class="stat-lbl">Min. detectable Δ</div>
+        <div class="stat-val">${primaryDelta!=null?primaryDelta.toFixed(2):'—'}</div>
+        <div class="stat-sub">${dPct}% of Group 1 mean</div></div>
+      <div class="stat"><div class="stat-lbl">n per group</div>
+        <div class="stat-val" style="font-size:20px">${nKnown}</div>
+        <div class="stat-sub">Total: ${nKnown*nGroups}</div></div>
+      <div class="stat"><div class="stat-lbl">At power</div>
+        <div class="stat-val" style="font-size:20px">${Math.round(power*100)}%</div>
+        <div class="stat-sub">α = ${alpha.toFixed(3)}</div></div>
+    `;
+  }
+
+  // ── Interpretation ────────────────────────────────────────────────────────
+  const nDisplay = calcMode==='n' ? Math.ceil(primaryN) : nKnown;
+  let bonferroniNote = (isANOVA && nGroups > 2)
+    ? ` Bonferroni correction applied for ${pairs} pairwise comparisons (α<sub>adj</sub> = ${alpha.toFixed(4)}).` : '';
+  let dropoutNote = dropout > 0
+    ? ` Includes ${dropout}% dropout inflation (raw n = ${Math.ceil(calcN(delta,sd1,sd2,alpha,power,twoSided,pooled)||0)}).` : '';
+
+  document.getElementById('interpBox').innerHTML = (() => {
+    if (calcMode === 'n') {
+      return `To detect a difference of <strong>${delta.toFixed(1)}</strong> between Group 1 
+        (μ=${m1}, σ=${sd1}) and Group 2 (μ=${m2}, σ=${sd2}), with α = ${alpha0} 
+        and ${Math.round(power*100)}% power, you need <strong>${nDisplay} animals per group</strong> 
+        (${nDisplay * nGroups} total across ${nGroups} group${nGroups>1?'s':''}).${bonferroniNote}${dropoutNote}
+        <br><br>Effect size: Cohen's d = ${cohensD.toFixed(2)} (${effectLabel.toLowerCase()}).`;
+    } else if (calcMode === 'power') {
+      const pStr = primaryPower!=null ? (primaryPower*100).toFixed(1)+'%' : 'N/A';
+      const warn = primaryPower!=null && primaryPower < 0.8
+        ? ' <span style="color:var(--amber)">⚠ Below 80% — consider increasing n.</span>' : '';
+      return `With <strong>${nKnown} animals per group</strong> and α = ${alpha0}, 
+        the study has <strong>${pStr} power</strong> to detect a difference of 
+        ${delta.toFixed(1)} (Cohen's d = ${cohensD.toFixed(2)}).${warn}${bonferroniNote}`;
+    } else {
+      const dStr = primaryDelta!=null ? primaryDelta.toFixed(2) : 'N/A';
+      const dPStr = primaryDelta!=null && m1 ? (primaryDelta/m1*100).toFixed(1)+'%' : '';
+      return `With <strong>${nKnown} animals per group</strong>, α = ${alpha0}, and ${Math.round(power*100)}% power, 
+        the minimum detectable difference is <strong>${dStr}</strong> ${dPStr?'('+dPStr+' of μ₁)':''}.
+        ${bonferroniNote}`;
+    }
+  })();
+
+  // ── Full table ────────────────────────────────────────────────────────────
+  const alphaLevels = [0.1, 0.05, 0.02, 0.01];
+  const powerLevels = [0.5, 0.8, 0.9, 0.95];
+  const curAlpha = alpha0, curPower = power;
+
+  document.getElementById('fullTableBody').innerHTML = alphaLevels.map(a => {
+    const adjA = (isANOVA && nGroups > 2) ? a / pairs : a;
+    return `<tr><td class="alpha-col">α = ${a}</td>` +
+      powerLevels.map(pw => {
+        const nRaw = calcN(delta, sd1, sd2, adjA, pw, twoSided, pooled);
+        if (nRaw == null) return '<td>—</td>';
+        const nFinal = Math.ceil(applyDropout(nRaw, dropout));
+        const isSelected = Math.abs(a - curAlpha) < 0.001 && Math.abs(pw - curPower) < 0.01;
+        const cls = isSelected ? 'highlighted' : pw <= 0.5 ? 'min-n' : pw >= 0.9 ? 'max-n' : 'opt-n';
+        return `<td class="${cls}">${nFinal}</td>`;
+      }).join('') + '</tr>';
+  }).join('');
+
+  // ── Statistical Justification text ────────────────────────────────────────
+  const nArms        = parseInt(document.getElementById('nArms').value)        || 1;
+  const nPD          = parseInt(document.getElementById('nPD').value)          || 0;
+  const nModels      = parseInt(document.getElementById('nModels').value)      || 1;
+  const takeRate     = parseFloat(document.getElementById('takeRate').value)   || 100;
+  const studyName    = document.getElementById('studyName').value.trim();
+  const nTimepoints  = parseInt(document.getElementById('nTimepoints')?.value) || 0;
+  const nPerTp       = parseInt(document.getElementById('nPerTimepoint')?.value)|| 0;
+  const nArmsForTp   = Math.min(parseInt(document.getElementById('nArmsTimepoint')?.value)||0, nArms);
+  // Clamp the field visually if over total arms
+  const nArmsForTpEl = document.getElementById('nArmsTimepoint');
+  if (nArmsForTpEl && parseInt(nArmsForTpEl.value) > nArms) nArmsForTpEl.value = nArms;
+  const nTimepointTotal = nTimepoints * nPerTp; // extra per selected arm
+
+  const nEfficacy  = Math.ceil(calcMode==='n' ? primaryN : nKnown);
+  const effDisplay = document.getElementById('nEfficacyDisplay');
+  if (effDisplay) effDisplay.value = nEfficacy;
+
+  const nPerArm    = nEfficacy + nPD;  // base per arm (all arms)
+  const samplingExtra = nTimepointTotal * Math.min(nArmsForTp, nArms); // only selected arms
+  const rawTotal   = nPerArm * nArms * nModels + samplingExtra * nModels;
+  const totalMice  = Math.ceil(rawTotal / (takeRate/100));
+
+  // ── Per-arm summary box ───────────────────────────────────────────────────
+  const summaryEl = document.getElementById('perArmSummary');
+  if (summaryEl) {
+    const rows = [
+      { label: 'Efficacy', n: nEfficacy, color: 'var(--accent)' },
+      ...(nPD > 0 ? [{ label: 'PD / sampling', n: nPD, color: 'var(--blue)' }] : []),
+      ...(nTimepointTotal > 0 && nArmsForTp > 0 ? [{ label: nTimepoints+' tp x '+nPerTp+' ('+nArmsForTp+' arms)', n: nTimepointTotal, color: 'var(--amber)' }] : []),
+    ];
+    const armTotal = nEfficacy + nPD + nTimepointTotal;
+    summaryEl.innerHTML = rows.map(r=>
+      '<div style="display:flex;justify-content:space-between">'+
+      '<span style="color:'+r.color+'">'+r.label+'</span>'+
+      '<span style="font-weight:600;color:var(--text)">'+r.n+'</span></div>'
+    ).join('') +
+    '<div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;'+
+    'display:flex;justify-content:space-between;font-weight:700">'+
+    '<span style="color:var(--text2)">Total per arm</span>'+
+    '<span style="color:var(--accent)">'+armTotal+'</span></div>';
+  }
+
+  const designLabel = {
+    superiority:    'superiority design',
+    noninferiority: `non-inferiority design (margin = ${niMargin})`,
+    equivalence:    `equivalence design (TOST, ± ${niMargin} margin)`
+  }[design] || 'superiority design';
+  const testStr   = isANOVA ? "one-way ANOVA with Dunnett's post-hoc test (each arm vs control)"
+                  : (design==='superiority'
+                      ? (twoSided ? "two-sided Student's t-test" : "one-sided Student's t-test")
+                      : `one-sided Student's t-test (${designLabel})`);
+  const varStr    = isANOVA
+    ? `across ${nGroups} experimental arms using Cohen's f effect size`
+    : pooled ? "assuming equal variances (pooled t-test)" : "using Welch's correction for unequal variances";
+  const varNote   = varBoost>0 ? `\n\nNote: A sensitivity analysis accounting for +${(varBoost*100).toFixed(0)}% increase in PDX tumor volume variability indicates that n per group may need to increase to ${Math.ceil(calcN(delta,sd1adj,sd2adj,alpha0,power,twoSided,pooled,design,niMargin)||0)} animals to maintain the same statistical power.` : '';
+  const sdRange   = sd1 !== sd2
+    ? `${Math.min(sd1,sd2).toFixed(2)}–${Math.max(sd1,sd2).toFixed(2)}`
+    : sd1.toFixed(2);
+  const deltaPctJ  = m1 ? (delta/m1*100).toFixed(0) : delta.toFixed(1);
+  const powerPct  = Math.round((calcMode==='n'?power: (primaryPower||power))*100);
+  const bonferroniStr = (isANOVA && nGroups > 2)
+    ? ` A Bonferroni correction is applied for ${pairs} pairwise comparisons, adjusting α to ${alpha.toFixed(4)}.`
+    : '';
+  const dropoutWasAdj = dropout > 0 && dropoutWasAdjusted(calcN(delta,sd1v||sd1,sd2v||sd2,alpha,power,twoSided,pooled,design,niMargin)||0, dropout);
+  const dropoutStr = dropout > 0
+    ? ` An additional ${dropout}% attrition allowance is included in the per-group estimate${dropoutWasAdj?' (*adjusted to minimum +1 animal, as fractional dropout is not applicable)':''}.`
+    : '';
+  const pdStr = (nPD > 0 || (nTimepointTotal > 0 && nArmsForTp > 0))
+    ? `\n\nAdditional animals per arm: ${nPD>0?nPD+` for pharmacodynamic (PD) assessment (early euthanasia for tissue collection)`:''}${nPD>0&&nTimepointTotal>0?' + ':''}${nTimepointTotal>0&&nArmsForTp>0?nTimepointTotal+` for ${nTimepoints} sampling timepoint${nTimepoints>1?'s':''} (${nPerTp} animals each, applied to ${nArmsForTp} selected arm${nArmsForTp>1?'s':''} only)`:''}.`
+    : '';
+  const modelStr  = nModels > 1 ? `${nModels} models × ` : '';
+  const takeStr   = takeRate < 100 ? ` accounting for a ${takeRate}% engraftment/take rate` : '';
+  const studyStr  = studyName ? ` for the ${studyName} study` : '';
+
+  const justText =
+`Statistical justification${studyStr}:
+[Generated by Power Studio · ${new Date().toLocaleDateString()}]
+
+Tumor volumes from treated mice will be compared with those from control mice using a ${testStr}, ${varStr}. The study is powered at α = ${alpha0}${isANOVA&&nGroups>2?' (before Bonferroni correction)':''} with ${powerPct}% power, assuming a standard deviation of ${sdRange} (Group 1 SD = ${sd1}, Group 2 SD = ${sd2}; Cohen's d = ${cohensD.toFixed(2)}, ${effectLabel.toLowerCase()} effect size).${bonferroniStr}${dropoutStr}
+
+A sample size of ${nEfficacy} animals per group provides sufficient power to detect a minimum difference of approximately ${deltaPctJ}% between group means (|Δ| = ${delta.toFixed(1)}, Group 1 mean = ${m1}, Group 2 mean = ${m2}).${pdStr}
+
+Total animal estimate:
+  ${modelStr}${nArms} arm${nArms>1?'s':''} × ${nPerArm} animals/arm${totalMice!==rawTotal?` / ${takeRate}% take rate`:''} = ${totalMice} animals total${takeStr}.`;
+
+  const justBox = document.getElementById('justifBox');
+  if (justBox) justBox.textContent = justText;
+
+  // Total animals highlight
+  const totalBox = document.getElementById('totalAnimalsBox');
+  if (totalBox) {
+    totalBox.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat highlight">
+          <div class="stat-lbl">Total animals</div>
+          <div class="stat-val">${totalMice}</div>
+          <div class="stat-sub">${modelStr}${nArms} arms × ${nPerArm}/arm${takeRate<100?' / '+takeRate+'% take':''}
+          </div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Per arm</div>
+          <div class="stat-val" style="font-size:20px">${nPerArm}</div>
+          <div class="stat-sub">${nEfficacy} efficacy${nPD>0?' + '+nPD+' PD':''}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-lbl">Arms × models</div>
+          <div class="stat-val" style="font-size:20px">${nArms * nModels}</div>
+          <div class="stat-sub">${nArms} arms × ${nModels} model${nModels>1?'s':''}</div>
+        </div>
+        ${takeRate < 100 ? `
+        <div class="stat warn">
+          <div class="stat-lbl">Take rate adj.</div>
+          <div class="stat-val" style="font-size:20px">+${totalMice - rawTotal}</div>
+          <div class="stat-sub">Extra mice for ${100-takeRate}% non-take</div>
+        </div>` : ''}
+      </div>`;
+  }
+
+  // Update budget n field
+  const budgNEl = document.getElementById('budgN');
+  if (budgNEl) { budgNEl.value = totalMice; calcBudget(); }
+
+  // ── ANOVA comparison ──────────────────────────────────────────────────────
+  const anovaCard = document.getElementById('anovaCard');
+  if (anovaCard) anovaCard.style.display = isANOVA ? '' : 'none';
+  if (isANOVA) renderANOVA(nGroups, delta, sd1v||sd1, sd2v||sd2, alpha0, power);
+
+  // ── Design visual ─────────────────────────────────────────────────────────
+  renderDesignChart(m1, m2, sd1, sd2, nDisplay, varBoost > 0 ? sd1adj : null, varBoost > 0 ? sd2adj : null);
+
+  // ── Power curve chart ─────────────────────────────────────────────────────
+  const nRange = [];
+  for (let n=2; n<=Math.max(50, nDisplay*2); n++) nRange.push(n);
+  const alphaCurves = [
+    {a:0.05, label:'α = 0.05', color:'#52D9C0'},
+    {a:0.01, label:'α = 0.01', color:'#F5C842'},
+    {a:0.1,  label:'α = 0.10', color:'#9AAAB0'},
+  ];
+  const pwDatasets = alphaCurves.map(({a,label,color}) => {
+    const adjA = nGroups>2 ? a/pairs : a;
+    return {
+      label, borderColor:color, pointRadius:0,
+      borderWidth: Math.abs(a-curAlpha)<0.001 ? 2.5 : 1.5,
+      data: nRange.map(n => {
+        const pw = calcPower(n, delta, sd1, sd2, adjA, twoSided, pooled);
+        return pw!=null ? +(pw*100).toFixed(2) : null;
+      })
+    };
+  });
+  // Add vertical line at current n
+  pwDatasets.push({
+    label:'Current n', borderColor:'rgba(244,116,91,0.7)', borderDash:[5,4],
+    pointRadius:0, borderWidth:1.5,
+    data: nRange.map(n => n===nDisplay ? 0 : null), fill:false,
+  });
+
+  if (powerChart) powerChart.destroy();
+  powerChart = new Chart(document.getElementById('powerChart'), {
+    type:'line',
+    data:{ labels:nRange, datasets:pwDatasets },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{
+        legend:{labels:{color:'#F0F4F5',font:{size:11}}},
+        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y?.toFixed(1)}%`}}
+      },
+      scales:{
+        y:{min:0,max:100,title:{display:true,text:'Power (%)',color:'#F0F4F5',font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.15)'},ticks:{callback:v=>v+'%',color:'#F0F4F5'},
+          border:{color:'rgba(200,208,212,0.3)'}},
+        x:{title:{display:true,text:'n per group',color:'#F0F4F5',font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.1)'},ticks:{color:'#F0F4F5'},
+          border:{color:'rgba(200,208,212,0.3)'}}
+      }
+    }
+  });
+
+  // ── Sensitivity chart: n vs delta% ───────────────────────────────────────
+  const deltaRange = [];
+  for (let d=5; d<=80; d+=5) deltaRange.push(d);
+  const sensitDataset = {
+    label:`n (α=${alpha0}, power=${Math.round(power*100)}%)`,
+    borderColor:'#64C8E8', backgroundColor:'rgba(100,200,232,0.1)',
+    pointRadius:3, pointBackgroundColor:'#64C8E8', borderWidth:2, fill:true,
+    data: deltaRange.map(dpct => {
+      const d2 = m1 * dpct / 100;
+      const nRaw = calcN(d2, sd1, sd2, alpha, power, twoSided, pooled);
+      return nRaw!=null ? Math.ceil(applyDropout(nRaw, dropout)) : null;
+    })
+  };
+  // Mark current delta
+  const curDeltaPct = m1 ? delta/m1*100 : 0;
+  sensitDataset.pointBackgroundColor = deltaRange.map(d =>
+    Math.abs(d - curDeltaPct) < 3 ? '#F4745B' : '#64C8E8'
+  );
+
+  if (sensitChart) sensitChart.destroy();
+  sensitChart = new Chart(document.getElementById('sensitChart'), {
+    type:'line',
+    data:{ labels:deltaRange.map(d=>d+'%'), datasets:[sensitDataset] },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{labels:{color:'#F0F4F5',font:{size:11}}}},
+      scales:{
+        y:{title:{display:true,text:'n per group',color:'#F0F4F5',font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.15)'},ticks:{color:'#F0F4F5'},min:0,
+          border:{color:'rgba(200,208,212,0.3)'}},
+        x:{title:{display:true,text:'Detectable difference (% of μ₁)',color:'#F0F4F5',font:{size:13}},
+          grid:{color:'rgba(200,208,212,0.1)'},ticks:{color:'#F0F4F5'},
+          border:{color:'rgba(200,208,212,0.3)'}}
+      }
+    }
+  });
+
+  // ── SD heatmap ────────────────────────────────────────────────────────────
+  const sdMults = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+  const deltaMults = [0.5, 0.75, 1.0, 1.25, 1.5];
+  const heatVals = sdMults.map(sm =>
+    deltaMults.map(dm => {
+      const s1h = sd1*sm, s2h = sd2*sm, dh = delta*dm;
+      const nRaw = calcN(dh, s1h, s2h, alpha, power, twoSided, pooled);
+      return nRaw!=null ? Math.ceil(applyDropout(nRaw, dropout)) : null;
+    })
+  );
+  const allVals = heatVals.flat().filter(v=>v!=null);
+  const minV = Math.min(...allVals), maxV = Math.max(...allVals);
+
+  function heatColor(val) {
+    const t = val == null ? 0 : Math.max(0, Math.min(1, (val-minV)/(maxV-minV)));
+    const r = Math.round(82 + (244-82)*t);
+    const g = Math.round(217 + (116-217)*t);
+    const b = Math.round(192 + (91-192)*t);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  const heatEl = document.getElementById('heatmapBody');
+  heatEl.innerHTML = `
+    <div style="margin-bottom:8px;font-size:10px;color:var(--text3)">
+      Rows = SD multiplier · Columns = Δ multiplier · Values = n per group
+    </div>
+    <div class="heat-grid">
+      <div class="heat-row">
+        <div class="heat-label">SD × Δ</div>
+        ${deltaMults.map(dm=>`<div class="heat-col-label">Δ×${dm}</div>`).join('')}
+      </div>
+      ${sdMults.map((sm,si)=>`
+        <div class="heat-row">
+          <div class="heat-label">SD×${sm}</div>
+          ${deltaMults.map((dm,di)=>{
+            const v = heatVals[si][di];
+            const bg = heatColor(v);
+            const textCol = v!=null && (v-minV)/(maxV-minV+1)>0.6 ? '#1a1a1a':'#F0F4F5';
+            const isCurrent = Math.abs(sm-1)<0.01 && Math.abs(dm-1)<0.01;
+            return `<div class="heat-cell" style="background:${bg};color:${textCol};
+              ${isCurrent?'outline:2px solid #F0F4F5':''}">
+              ${v!=null?v:'—'}
+            </div>`;
+          }).join('')}
+        </div>
+      `).join('')}
+    </div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text3)">
+      <span>Low n</span>
+      <div style="flex:1;height:8px;border-radius:4px;
+        background:linear-gradient(to right,rgb(82,217,192),rgb(244,116,91))"></div>
+      <span>High n</span>
+    </div>
+  `;
+}
+
+
+
+// ── ANOVA power ───────────────────────────────────────────────────────────────
+let anovaChart = null;
+function renderANOVA(k, delta, sd1, sd2, alpha, power) {
+  const sdPooled = Math.sqrt((sd1*sd1+sd2*sd2)/2);
+  const f = sdPooled>0 ? (delta/sdPooled)/Math.sqrt(k) : 0;
+  const el = document.getElementById('anovaResult');
+  const za = zScore(1-alpha), zb = zScore(power);
+  const rows = [2,3,4,5,6,8,10].map(kg=>{
+    const n = Math.max(2,Math.ceil(2*(za+zb)**2/(kg*f*f)+1));
+    return {kg,n,total:n*kg};
+  });
+  const baseN = rows[0].n;
+  if (el) el.innerHTML = `
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+      Cohen's f = <strong style="color:var(--accent)">${f.toFixed(3)}</strong>
+      &nbsp;·&nbsp; Effect: <strong style="color:var(--accent)">${f<0.1?'Very small':f<0.25?'Small':f<0.4?'Medium':'Large'}</strong>
+      &nbsp;·&nbsp; Based on Δ = ${delta.toFixed(1)}, SD<sub>pooled</sub> = ${sdPooled.toFixed(1)}
+    </div>
+    <div style="overflow-x:auto"><table class="result-tbl">
+      <thead><tr><th style="text-align:left">Groups (k)</th><th>n / group</th><th>Total</th><th>Δ vs 2-group</th></tr></thead>
+      <tbody>${rows.map(r=>`<tr>
+        <td style="text-align:left;font-weight:600;color:var(--text2)">${r.kg} groups</td>
+        <td class="${r.kg===k?'highlighted':'opt-n'}">${r.n}</td>
+        <td>${r.total}</td>
+        <td style="color:${r.n>baseN?'var(--amber)':'var(--accent)'}">${r.n>baseN?'+':''}${r.n-baseN}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  if (anovaChart) anovaChart.destroy();
+  anovaChart = new Chart(document.getElementById('anovaChart'),{
+    type:'bar',
+    data:{labels:rows.map(r=>`k=${r.kg}`),datasets:[
+      {label:'n per group',data:rows.map(r=>r.n),backgroundColor:'rgba(82,217,192,0.6)',borderColor:'#52D9C0',borderWidth:1.5,borderRadius:4},
+      {label:'Total animals',data:rows.map(r=>r.total),backgroundColor:'rgba(245,168,35,0.4)',borderColor:'#F5A623',borderWidth:1.5,borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#F0F4F5',font:{size:11}}}},
+      scales:{
+        y:{title:{display:true,text:'Animals',color:'#F0F4F5',font:{size:12}},grid:{color:'rgba(200,208,212,0.15)'},ticks:{color:'#F0F4F5'},min:0},
+        x:{grid:{color:'rgba(200,208,212,0.08)'},ticks:{color:'#F0F4F5'}}
+      }}
+  });
+}
+
+
+// ── Budget Estimator ──────────────────────────────────────────────────────────
+function calcBudget() {
+  const n          = parseInt(document.getElementById('budgN')?.value)         || 0;
+  const priceAnimal= parseFloat(document.getElementById('budgPriceAnimal')?.value) || 0;
+  const supplies   = parseFloat(document.getElementById('budgSupplies')?.value)    || 0;
+  const days       = parseFloat(document.getElementById('budgDays')?.value)        || 0;
+  const cageDay    = parseFloat(document.getElementById('budgCageDay')?.value)     || 0;
+  const perCage    = parseInt(document.getElementById('budgPerCage')?.value)       || 5;
+  const shipBox    = parseFloat(document.getElementById('budgShipBox')?.value)     || 0;
+  const shipSize   = parseInt(document.getElementById('budgShipSize')?.value)      || 50;
+  const other      = parseFloat(document.getElementById('budgOther')?.value)       || 0;
+
+  if (!n) return;
+
+  const nCages        = Math.ceil(n / perCage);
+  const nBoxes        = Math.ceil(n / shipSize);
+  const costAnimals   = n * priceAnimal;
+  const costSupplies  = n * supplies;
+  const costHousing   = nCages * days * cageDay;
+  const costShipping  = nBoxes * shipBox;
+  const costTotal     = costAnimals + costSupplies + costHousing + costShipping + other;
+
+  const fmt = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const pct = v => costTotal > 0 ? (v/costTotal*100).toFixed(0)+'%' : '—';
+
+  const el = document.getElementById('budgetResult');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="stat-grid" style="margin-bottom:12px">
+      <div class="stat highlight">
+        <div class="stat-lbl">Total estimated cost</div>
+        <div class="stat-val" style="font-size:22px">${fmt(costTotal)}</div>
+        <div class="stat-sub">${n} animals · ${nCages} cages · ${nBoxes} box${nBoxes!==1?'es':''}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Animals</div>
+        <div class="stat-val" style="font-size:18px">${fmt(costAnimals)}</div>
+        <div class="stat-sub">${n} × ${fmt(priceAnimal)} &nbsp; ${pct(costAnimals)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Supplies</div>
+        <div class="stat-val" style="font-size:18px">${fmt(costSupplies)}</div>
+        <div class="stat-sub">${n} × ${fmt(supplies)} &nbsp; ${pct(costSupplies)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Housing</div>
+        <div class="stat-val" style="font-size:18px">${fmt(costHousing)}</div>
+        <div class="stat-sub">${nCages} cages × ${days}d × ${fmt(cageDay)}/d &nbsp; ${pct(costHousing)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Shipping</div>
+        <div class="stat-val" style="font-size:18px">${fmt(costShipping)}</div>
+        <div class="stat-sub">${nBoxes} box${nBoxes!==1?'es':''} × ${fmt(shipBox)} &nbsp; ${pct(costShipping)}</div>
+      </div>
+      ${other>0?`<div class="stat">
+        <div class="stat-lbl">Other</div>
+        <div class="stat-val" style="font-size:18px">${fmt(other)}</div>
+        <div class="stat-sub">${pct(other)}</div>
+      </div>`:''}
+    </div>
+    <!-- Cost breakdown bar -->
+    <div style="height:10px;border-radius:5px;overflow:hidden;display:flex;margin-bottom:6px">
+      ${[[costAnimals,'#52D9C0'],[costSupplies,'#64C8E8'],[costHousing,'#F5A623'],[costShipping,'#C08EF0'],[other,'#F4745B']]
+        .filter(([v])=>v>0)
+        .map(([v,c])=>`<div style="flex:${v};background:${c}"></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--text3)">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#52D9C0;margin-right:3px"></span>Animals</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#64C8E8;margin-right:3px"></span>Supplies</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#F5A623;margin-right:3px"></span>Housing</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#C08EF0;margin-right:3px"></span>Shipping</span>
+      ${other>0?'<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#F4745B;margin-right:3px"></span>Other</span>':''}
+      <span style="margin-left:auto">Per animal: ${fmt(costTotal/n)}</span>
+    </div>`;
+}
+
+// ── Copy justification to clipboard ──────────────────────────────────────────
+function copyJustification() {
+  const text = document.getElementById('justifBox')?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="copyJustification()"]');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(()=>btn.textContent='📋 Copy', 2000); }
+  }).catch(() => {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Set today as default implantation date
+calculate();
+</script>
+</body>
+</html>
